@@ -1,6 +1,6 @@
 # 🕵️ Deepfake Face Detector
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-blue?style=for-the-badge)](https://deepfake-detector-YOUR_URL.onrender.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-blue?style=for-the-badge)]([https://deepfake-detector-YOUR_URL.onrender.com](https://deepfake-detection-in92.onrender.com/)
 [![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.7-red?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Latest-green?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -51,7 +51,7 @@ Grad-CAM Explainability Heatmap
 
 ## 🚀 Live Demo
 
-**[👉 Try it live here](https://deepfake-detector-YOUR_URL.onrender.com)**
+**[👉 Try it live here](https://deepfake-detector-YOUR_URL.onrender.com](https://deepfake-detection-in92.onrender.com/)**
 
 Deployed on Render with auto-scaling. First request may take 10-15s (cold start) as models load.
 
