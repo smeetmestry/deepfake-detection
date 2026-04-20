@@ -1,4 +1,4 @@
-torch-cpu
+torch
 torchvision
 facenet-pytorch
 grad-cam
