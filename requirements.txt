@@ -4,7 +4,7 @@ facenet-pytorch
 grad-cam
 transformers
 opencv-python
-Pillow==10.3.0
+Pillow
 numpy
 fastapi
 uvicorn[standard]
