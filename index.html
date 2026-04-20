@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deepfake Face Detector</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0f0f0f;color:#e0e0e0;font-family:'Segoe UI',sans-serif;min-height:100vh}
+    header{text-align:center;padding:40px 20px 20px;border-bottom:1px solid #222}
+    header h1{font-size:2.4em;font-weight:800;color:#fff}
+    header p{color:#888;margin-top:8px;font-size:1.05em}
+    .container{max-width:1100px;margin:0 auto;padding:30px 20px}
+    .upload-area{border:2px dashed #333;border-radius:16px;padding:50px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:#161616;margin-bottom:20px}
+    .upload-area:hover,.upload-area.dragover{border-color:#6366f1;background:#1a1a2e}
+    .upload-area .icon{font-size:3em;margin-bottom:12px}
+    .upload-area p{color:#888;font-size:1em}
+    .upload-area span{color:#6366f1;font-weight:600}
+    #file-input{display:none}
+    #preview-section{display:none;margin-bottom:20px}
+    #preview-img{max-width:100%;max-height:350px;border-radius:12px;display:block;margin:0 auto}
+    .btn{display:block;width:100%;padding:16px;background:#6366f1;color:white;border:none;border-radius:12px;font-size:1.1em;font-weight:700;cursor:pointer;transition:background 0.2s,transform 0.1s;margin-bottom:12px}
+    .btn:hover{background:#4f46e5}
+    .btn:active{transform:scale(0.98)}
+    .btn:disabled{background:#333;cursor:not-allowed}
+    .btn-secondary{background:#222;color:#aaa}
+    .btn-secondary:hover{background:#2a2a2a}
+    #loader{display:none;text-align:center;padding:30px}
+    .spinner{width:48px;height:48px;border:4px solid #333;border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #results{display:none}
+    .verdict-banner{text-align:center;padding:24px;border-radius:16px;margin-bottom:24px;font-size:1.5em;font-weight:800}
+    .verdict-fake{background:#3b0000;border:2px solid #ef4444;color:#ef4444}
+    .verdict-likely-fake{background:#2d1a00;border:2px solid #f97316;color:#f97316}
+    .verdict-uncertain{background:#1a1a00;border:2px solid #eab308;color:#eab308}
+    .verdict-real{background:#002200;border:2px solid #22c55e;color:#22c55e}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+    @media(max-width:700px){.grid{grid-template-columns:1fr}}
+    .card{background:#161616;border:1px solid #222;border-radius:16px;padding:20px}
+    .card h3{font-size:0.85em;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:14px}
+    .card img{width:100%;border-radius:10px}
+    .score-row{margin-bottom:12px}
+    .score-label{display:flex;justify-content:space-between;margin-bottom:6px;font-size:0.9em}
+    .bar-bg{background:#222;border-radius:99px;height:10px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:99px;transition:width 0.6s ease}
+    .bar-fake{background:#ef4444}
+    .bar-real{background:#22c55e}
+    .face-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:14px;margin-bottom:10px}
+    .face-card h4{color:#fff;margin-bottom:8px}
+    .face-card p{color:#999;font-size:0.88em;line-height:1.5}
+    .meta-item{padding:8px 0;border-bottom:1px solid #1e1e1e;font-size:0.88em;color:#aaa}
+    .meta-item:last-child{border-bottom:none}
+    footer{text-align:center;padding:30px;color:#444;font-size:0.85em;border-top:1px solid #1a1a1a;margin-top:40px}
+  </style>
+</head>
+<body>
+<header>
+  <h1>🕵️ Deepfake Face Detector</h1>
+  <p>Detects face-swaps, GAN faces, and modern AI-generated images</p>
+</header>
+<div class="container">
+  <div class="upload-area" id="drop-zone">
+    <div class="icon">📂</div>
+    <p>Drag & drop a face image here, or <span>click to upload</span></p>
+    <p style="margin-top:8px;font-size:0.85em">Supports JPG, PNG, WebP</p>
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp"/>
+  </div>
+  <div id="preview-section"><img id="preview-img" src="" alt="Preview"/></div>
+  <button class="btn" id="analyze-btn" disabled>🔍 Analyze Image</button>
+  <button class="btn btn-secondary" id="clear-btn">🗑️ Clear</button>
+  <div id="loader">
+    <div class="spinner"></div>
+    <p style="color:#888">Analyzing — running both models...</p>
+  </div>
+  <div id="results">
+    <div class="verdict-banner" id="verdict-banner"></div>
+    <div class="card" style="margin-bottom:24px">
+      <h3>Combined Score</h3>
+      <div class="score-row">
+        <div class="score-label"><span>Fake / AI Generated</span><span id="fake-pct">0%</span></div>
+        <div class="bar-bg"><div class="bar-fill bar-fake" id="fake-bar" style="width:0%"></div></div>
+      </div>
+      <div class="score-row">
+        <div class="score-label"><span>Real / Human</span><span id="real-pct">0%</span></div>
+        <div class="bar-bg"><div class="bar-fill bar-real" id="real-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Annotated Result</h3>
+        <img id="annotated-img" src="" alt="Annotated"/>
+      </div>
+      <div class="card">
+        <h3>Grad-CAM Heatmap</h3>
+        <img id="heatmap-img" src="" alt="Heatmap"/>
+        <p style="color:#555;font-size:0.8em;margin-top:8px">Red/yellow = regions flagged as suspicious</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Model 2 — AI Image Detector</h3>
+        <div class="score-row" style="margin-top:8px">
+          <div class="score-label"><span>Artificial</span><span id="m2-fake-pct">0%</span></div>
+          <div class="bar-bg"><div class="bar-fill bar-fake" id="m2-fake-bar" style="width:0%"></div></div>
+        </div>
+        <div class="score-row">
+          <div class="score-label"><span>Human</span><span id="m2-real-pct">0%</span></div>
+          <div class="bar-bg"><div class="bar-fill bar-real" id="m2-real-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Metadata Analysis</h3>
+        <div id="metadata-list"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:24px">
+      <h3>Per-Face Results</h3>
+      <div id="face-results-list"></div>
+    </div>
+  </div>
+</div>
+<footer>Built with InceptionResnetV1 + AI Image Detector + Grad-CAM | FastAPI | GTX 1650 | PyTorch</footer>
+<script>
+  const dropZone=document.getElementById("drop-zone");
+  const fileInput=document.getElementById("file-input");
+  const previewSec=document.getElementById("preview-section");
+  const previewImg=document.getElementById("preview-img");
+  const analyzeBtn=document.getElementById("analyze-btn");
+  const clearBtn=document.getElementById("clear-btn");
+  const loader=document.getElementById("loader");
+  const results=document.getElementById("results");
+  let selectedFile=null;
+
+  dropZone.addEventListener("click",()=>fileInput.click());
+  fileInput.addEventListener("change",e=>{if(e.target.files[0])loadFile(e.target.files[0])});
+  dropZone.addEventListener("dragover",e=>{e.preventDefault();dropZone.classList.add("dragover")});
+  dropZone.addEventListener("dragleave",()=>dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remove("dragover");if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0])});
+
+  function loadFile(file){
+    selectedFile=file;
+    previewImg.src=URL.createObjectURL(file);
+    previewSec.style.display="block";
+    analyzeBtn.disabled=false;
+    results.style.display="none";
+  }
+
+  clearBtn.addEventListener("click",()=>{
+    selectedFile=null;fileInput.value="";
+    previewSec.style.display="none";
+    analyzeBtn.disabled=true;
+    results.style.display="none";
+    loader.style.display="none";
+  });
+
+  analyzeBtn.addEventListener("click",async()=>{
+    if(!selectedFile)return;
+    analyzeBtn.disabled=true;
+    loader.style.display="block";
+    results.style.display="none";
+    const fd=new FormData();
+    fd.append("file",selectedFile);
+    try{
+      const res=await fetch("/predict",{method:"POST",body:fd});
+      if(!res.ok){const e=await res.json();alert("Error: "+(e.detail||"Unknown"));return;}
+      displayResults(await res.json());
+    }catch(e){alert("Request failed: "+e.message);}
+    finally{loader.style.display="none";analyzeBtn.disabled=false;}
+  });
+
+  function displayResults(data){
+    const banner=document.getElementById("verdict-banner");
+    banner.textContent=data.verdict;
+    banner.className="verdict-banner";
+    if(data.combined_fake>=0.65)banner.classList.add("verdict-fake");
+    else if(data.combined_fake>=0.45)banner.classList.add("verdict-likely-fake");
+    else if(data.combined_fake>=0.35)banner.classList.add("verdict-uncertain");
+    else banner.classList.add("verdict-real");
+
+    const fp=Math.round(data.combined_fake*100);
+    const rp=Math.round(data.combined_real*100);
+    document.getElementById("fake-pct").textContent=fp+"%";
+    document.getElementById("real-pct").textContent=rp+"%";
+    document.getElementById("fake-bar").style.width=fp+"%";
+    document.getElementById("real-bar").style.width=rp+"%";
+
+    document.getElementById("annotated-img").src="data:image/png;base64,"+data.annotated_image;
+    document.getElementById("heatmap-img").src="data:image/png;base64,"+data.heatmap;
+
+    const m2f=Math.round(data.model2_artificial*100);
+    const m2r=Math.round(data.model2_human*100);
+    document.getElementById("m2-fake-pct").textContent=m2f+"%";
+    document.getElementById("m2-real-pct").textContent=m2r+"%";
+    document.getElementById("m2-fake-bar").style.width=m2f+"%";
+    document.getElementById("m2-real-bar").style.width=m2r+"%";
+
+    document.getElementById("metadata-list").innerHTML=data.metadata.map(m=>`<div class="meta-item">${m}</div>`).join("");
+
+    const fl=document.getElementById("face-results-list");
+    fl.innerHTML=data.face_results.length===0
+      ?`<p style="color:#666">No faces detected — AI image analysis only.</p>`
+      :data.face_results.map(f=>`<div class="face-card"><h4>Face ${f.face_id}</h4><p>Real: <strong>${Math.round(f.real*100)}%</strong> | Fake: <strong>${Math.round(f.fake*100)}%</strong></p><p style="margin-top:6px">${f.explanation}</p></div>`).join("");
+
+    results.style.display="block";
+    results.scrollIntoView({behavior:"smooth"});
+  }
+</script>
+</body>
+</html>

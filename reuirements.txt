@@ -1,0 +1,11 @@
+torch==2.7.1
+torchvision
+facenet-pytorch
+grad-cam
+transformers
+opencv-python
+pillow
+numpy
+fastapi
+uvicorn[standard]
+python-multipart

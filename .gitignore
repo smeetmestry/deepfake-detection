@@ -1,0 +1,10 @@
+*.pth
+*.pt
+*.bin
+__pycache__/
+*.pyc
+.env
+venv/
+.DS_Store
+*.log
+models/resnetinceptionv1_epoch_32.pth
