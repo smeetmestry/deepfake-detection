@@ -51,7 +51,7 @@ Grad-CAM Explainability Heatmap
 
 ## 🚀 Live Demo
 
-**[👉 Try it live here](https://deepfake-detector-YOUR_URL.onrender.com](https://deepfake-detection-in92.onrender.com/)**
+**[👉 Try it live here]**
 
 Deployed on Render with auto-scaling. First request may take 10-15s (cold start) as models load.
 
